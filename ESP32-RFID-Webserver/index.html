@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>UID Check</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { 
             background-color: lightblue; 
@@ -10,41 +11,50 @@
             align-items: center; 
             height: 100vh; 
             margin: 0; 
+            font-family: Arial, sans-serif;
+            padding: 10px; /* Add padding for better mobile view */
         }
         .container { 
             background: white; 
-            padding: 50px; 
+            padding: 20px; 
             border-radius: 10px; 
             text-align: center; 
-            width: 500px; 
+            width: 100%; /* Change to 100% for mobile responsiveness */
+            max-width: 500px; 
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
         button { 
             background: lightblue; 
             border: none; 
             padding: 15px 30px; 
             border-radius: 5px; 
-            margin: 15px; 
-            width: 150px; 
+            margin: 10px 0; /* Adjust margin for better spacing on mobile */
+            width: 100%; 
             font-size: 16px; 
+            cursor: pointer;
         }
         input { 
             padding: 15px; 
             border-radius: 5px; 
             border: 1px solid lightblue; 
-            margin: 15px; 
+            margin: 10px 0; 
             width: calc(100% - 32px); 
             font-size: 16px; 
+            text-align: center; 
         }
         #uid { 
             color: black; 
+        }
+        #message {
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>UID</h2>
-        <input type="text" id="uid" readonly placeholder="UID">
-        <input type="text" id="owner" placeholder="Enter owner's name">
+        <input type="text" id="uid" readonly>
+        <input type="text" id="status" placeholder="">
         <div id="message"></div>
         <div>
             <button onclick="sendWebSocketMessage('ADD')">Registration</button>
@@ -59,37 +69,48 @@
             var uid = message[1];
             var owner = message[2] || '';
             var uidInput = document.getElementById('uid');
-            var ownerInput = document.getElementById('owner');
+            var statusInput = document.getElementById('status');
             var messageDiv = document.getElementById('message');
 
             if (status === 'KNOWN') {
                 uidInput.value = uid;
                 uidInput.style.color = 'green';
-                ownerInput.value = 'Hello ' + owner;
+                statusInput.placeholder = 'Hello ' + owner;
                 messageDiv.innerText = '';
             } else if (status === 'UNKNOWN') {
                 uidInput.value = uid;
                 uidInput.style.color = 'red';
-                ownerInput.value = '';
+                statusInput.placeholder = '';
                 messageDiv.innerText = 'Enter owner\'s name for registration';
+                messageDiv.style.color = 'red';
+            } else if (status === 'Successfully registered') {
+                messageDiv.innerText = status;
+                messageDiv.style.color = 'green';
+                statusInput.value = '';
+            } else if (status === 'User successfully deleted') {
+                messageDiv.innerText = status;
+                messageDiv.style.color = 'green';
             } else {
-                messageDiv.innerText = event.data;
+                messageDiv.innerText = status;
+                messageDiv.style.color = 'red';
             }
         };
 
         function sendWebSocketMessage(action) {
             var uid = document.getElementById('uid').value;
-            var owner = document.getElementById('owner').value;
+            var status = document.getElementById('status').value;
             if (uid) {
-                if (action === 'ADD' && owner) {
-                    webSocket.send(action + ':' + uid + ':' + owner);
+                if (action === 'ADD' && status) {
+                    webSocket.send(action + ':' + uid + ':' + status);
                 } else if (action === 'DELETE') {
                     webSocket.send(action + ':' + uid);
                 } else {
                     document.getElementById('message').innerText = 'Please enter the owner\'s name for registration';
+                    document.getElementById('message').style.color = 'red';
                 }
             } else {
                 document.getElementById('message').innerText = 'Please scan a UID first';
+                document.getElementById('message').style.color = 'red';
             }
         }
     </script>

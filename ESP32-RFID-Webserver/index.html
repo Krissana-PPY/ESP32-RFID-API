@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>UID Check</title>
+    <style>
+        body { 
+            background-color: lightblue; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+        }
+        .container { 
+            background: white; 
+            padding: 50px; 
+            border-radius: 10px; 
+            text-align: center; 
+            width: 500px; 
+        }
+        button { 
+            background: lightblue; 
+            border: none; 
+            padding: 15px 30px; 
+            border-radius: 5px; 
+            margin: 15px; 
+            width: 150px; 
+            font-size: 16px; 
+        }
+        input { 
+            padding: 15px; 
+            border-radius: 5px; 
+            border: 1px solid lightblue; 
+            margin: 15px; 
+            width: calc(100% - 32px); 
+            font-size: 16px; 
+        }
+        #uid { 
+            color: black; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>UID</h2>
+        <input type="text" id="uid" readonly placeholder="UID">
+        <input type="text" id="owner" placeholder="Enter owner's name">
+        <div id="message"></div>
+        <div>
+            <button onclick="sendWebSocketMessage('ADD')">Registration</button>
+            <button onclick="sendWebSocketMessage('DELETE')">Delete</button>
+        </div>
+    </div>
+    <script>
+        var webSocket = new WebSocket('ws://' + window.location.hostname + ':81/');
+        webSocket.onmessage = function(event) {
+            var message = event.data.split(':');
+            var status = message[0];
+            var uid = message[1];
+            var owner = message[2] || '';
+            var uidInput = document.getElementById('uid');
+            var ownerInput = document.getElementById('owner');
+            var messageDiv = document.getElementById('message');
+
+            if (status === 'KNOWN') {
+                uidInput.value = uid;
+                uidInput.style.color = 'green';
+                ownerInput.value = 'Hello ' + owner;
+                messageDiv.innerText = '';
+            } else if (status === 'UNKNOWN') {
+                uidInput.value = uid;
+                uidInput.style.color = 'red';
+                ownerInput.value = '';
+                messageDiv.innerText = 'Enter owner\'s name for registration';
+            } else {
+                messageDiv.innerText = event.data;
+            }
+        };
+
+        function sendWebSocketMessage(action) {
+            var uid = document.getElementById('uid').value;
+            var owner = document.getElementById('owner').value;
+            if (uid) {
+                if (action === 'ADD' && owner) {
+                    webSocket.send(action + ':' + uid + ':' + owner);
+                } else if (action === 'DELETE') {
+                    webSocket.send(action + ':' + uid);
+                } else {
+                    document.getElementById('message').innerText = 'Please enter the owner\'s name for registration';
+                }
+            } else {
+                document.getElementById('message').innerText = 'Please scan a UID first';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -17,7 +17,7 @@ const char* password = "123456789";
 WebServer server(80);
 WebSocketsServer webSocket = WebSocketsServer(81);
 
-void handleRoot();
+//void handleRoot();
 void handleIndex();
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length);
 
@@ -107,7 +107,7 @@ void loop() {
   }
 }
 
-void handleRoot() {
+/*void handleRoot() {
   //File file = SPIFFS.open("/login.html", "r");
   File file = SPIFFS.open("/index.html", "r");
   if (!file) {
@@ -116,7 +116,7 @@ void handleRoot() {
   }
   server.streamFile(file, "text/html");
   file.close();
-}
+}*/
 
 void handleIndex() {
   File file = SPIFFS.open("/index.html", "r");

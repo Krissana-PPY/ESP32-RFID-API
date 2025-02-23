@@ -48,6 +48,19 @@
         #message {
             margin-top: 10px;
         }
+        .green-button { 
+            background: green; 
+            color: white; 
+            border-radius: 50%; 
+            width: 100px; 
+            height: 100px; 
+            padding: 0; 
+            font-size: 20px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            margin: 20px auto; /* Center the button */
+        }
     </style>
 </head>
 <body>
@@ -59,6 +72,7 @@
         <div>
             <button onclick="sendWebSocketMessage('ADD')">Registration</button>
             <button onclick="sendWebSocketMessage('DELETE')">Delete</button>
+            <button class="green-button" onclick="sendWebSocketMessage('OPEN')">OPEN</button>
         </div>
     </div>
     <script>
@@ -90,6 +104,9 @@
             } else if (status === 'User successfully deleted') {
                 messageDiv.innerText = status;
                 messageDiv.style.color = 'green';
+            } else if (status === 'OPEN') {
+                messageDiv.innerText = 'Open successfully';
+                messageDiv.style.color = 'green';
             } else {
                 messageDiv.innerText = status;
                 messageDiv.style.color = 'red';
@@ -99,7 +116,9 @@
         function sendWebSocketMessage(action) {
             var uid = document.getElementById('uid').value;
             var status = document.getElementById('status').value;
-            if (uid) {
+            if (action === 'OPEN') {
+                webSocket.send(action);
+            } else if (uid) {
                 if (action === 'ADD' && status) {
                     webSocket.send(action + ':' + uid + ':' + status);
                 } else if (action === 'DELETE') {

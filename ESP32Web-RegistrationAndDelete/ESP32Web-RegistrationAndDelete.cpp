@@ -8,6 +8,7 @@
 
 #define SS_PIN  5 //SDA
 #define RST_PIN 21 //RST
+#define RELAY_PIN  2 // Define the relay pin
 
 MFRC522 mfrc522(SS_PIN, RST_PIN);  // Create MFRC522 instance
 
@@ -47,6 +48,9 @@ void setup() {
 
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
+
+  pinMode(RELAY_PIN, OUTPUT); // Initialize the relay pin as an output
+  digitalWrite(RELAY_PIN, LOW); // Ensure the relay is off initially
 }
 
 void loop() {
@@ -100,6 +104,9 @@ void loop() {
   // Send UID and owner information to the website
   if (uidFound) {
     webSocket.broadcastTXT("KNOWN:" + content + ":" + owner);
+    digitalWrite(RELAY_PIN, HIGH); // Turn on the relay
+    delay(5000); // Keep the relay on for 5 seconds
+    digitalWrite(RELAY_PIN, LOW); // Turn off the relay
   } else {
     webSocket.broadcastTXT("UNKNOWN:" + content);
     Serial.print("UID tag (in red): ");
@@ -199,6 +206,12 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       } else {
         Serial.println("Failed to open UIDs.csv");
       }
+    } else if (action == "OPEN") {
+      digitalWrite(RELAY_PIN, HIGH); // Turn on the relay
+      delay(5000); // Keep the relay on for 5 seconds
+      digitalWrite(RELAY_PIN, LOW); // Turn off the relay
+      webSocket.sendTXT(num, "OPEN");
+      Serial.println("Open successfully");
     }
   }
 }

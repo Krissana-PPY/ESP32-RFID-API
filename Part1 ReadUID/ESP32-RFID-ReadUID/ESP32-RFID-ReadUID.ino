@@ -3,9 +3,9 @@
 
 #define SS_PIN  5 //SDA
 #define RST_PIN 21 //RST
-//efine MISO_PIN 19 ISO
-//efine MOSI_PIN 23 MOSI
-//efine SCK_PIN 18 SCK
+//MISO_PIN 19 ISO
+//MOSI_PIN 23 MOSI
+//SCK_PIN 18 SCK
 MFRC522 mfrc522(SS_PIN, RST_PIN);  // Create MFRC522 instance
 
 void setup() {

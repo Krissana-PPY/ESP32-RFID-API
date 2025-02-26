@@ -51,14 +51,35 @@
         .green-button { 
             background: green; 
             color: white; 
-            border-radius: 50%; 
-            width: 100px; 
-            height: 100px; 
+            border-radius: 5px; 
+            width: 100px; /* Set width to 100px for square shape */
+            height: 100px; /* Set height to 100px for square shape */
             padding: 0; 
             font-size: 20px; 
             display: flex; 
             justify-content: center; 
             align-items: center; 
+            margin: 20px auto; /* Center the button */
+        }
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+        }
+        .green-button {
+            flex: 1;
+            margin: 10px; /* Add margin for spacing between buttons */
+        }
+        .lightblue-button {
+            background: lightblue; /* Change color to lightblue */
+            color: white;
+            border-radius: 5px;
+            width: 100%; /* Set width to 100px for square shape */
+            height: 50px; /* Set height to 100px for square shape */
+            padding: 0;
+            font-size: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             margin: 20px auto; /* Center the button */
         }
     </style>
@@ -70,10 +91,14 @@
         <input type="text" id="status" placeholder="">
         <div id="message"></div>
         <div>
-            <button onclick="sendWebSocketMessage('ADD')">Registration</button>
-            <button onclick="sendWebSocketMessage('DELETE')">Delete</button>
-            <button class="green-button" onclick="sendWebSocketMessage('OPEN')">OPEN</button>
+            <button class="lightblue-button" onclick="sendWebSocketMessage('ADD')">Registration</button>
+            <button class="lightblue-button" onclick="sendWebSocketMessage('DELETE')">Delete</button>
         </div>
+        <div class="button-container">
+            <button class="green-button" onclick="sendWebSocketMessage('OPEN')">OPEN</button>
+            <button class="green-button" onclick="window.location.href='member.html'">MEMBER</button>
+        </div>
+        
     </div>
     <script>
         var webSocket = new WebSocket('ws://' + window.location.hostname + ':81/');
@@ -85,11 +110,11 @@
             var uidInput = document.getElementById('uid');
             var statusInput = document.getElementById('status');
             var messageDiv = document.getElementById('message');
-
             if (status === 'KNOWN') {
                 uidInput.value = uid;
                 uidInput.style.color = 'green';
                 statusInput.placeholder = 'Hello ' + owner;
+                statusInput.style.color = 'green';
                 messageDiv.innerText = '';
             } else if (status === 'UNKNOWN') {
                 uidInput.value = uid;
@@ -104,6 +129,9 @@
             } else if (status === 'User successfully deleted') {
                 messageDiv.innerText = status;
                 messageDiv.style.color = 'green';
+            } else if (status === 'UID already exists') {
+                messageDiv.innerText = status;
+                messageDiv.style.color = 'red';
             } else if (status === 'OPEN') {
                 messageDiv.innerText = 'Open successfully';
                 messageDiv.style.color = 'green';
@@ -112,7 +140,6 @@
                 messageDiv.style.color = 'red';
             }
         };
-
         function sendWebSocketMessage(action) {
             var uid = document.getElementById('uid').value;
             var status = document.getElementById('status').value;

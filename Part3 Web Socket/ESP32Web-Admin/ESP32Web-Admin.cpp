@@ -20,6 +20,8 @@ WebSocketsServer webSocket = WebSocketsServer(81);
 
 //void handleRoot();
 void handleIndex();
+void handleMember(); // Add function declaration for handling member page
+void handleUIDs(); // Add function declaration for handling UIDs.csv
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length);
 
 void setup() {
@@ -42,7 +44,9 @@ void setup() {
 
   //server.on("/", handleRoot);
   server.on("/", handleIndex);
-  //server.on("/index.html", handleIndex);
+  server.on("/member.html", handleMember); // Add route for member page
+  server.on("/UIDs.csv", handleUIDs); // Add route for UIDs.csv
+    //server.on("/index.html", handleIndex);
   server.begin();
   Serial.println("HTTP server started");
 
@@ -105,25 +109,13 @@ void loop() {
   if (uidFound) {
     webSocket.broadcastTXT("KNOWN:" + content + ":" + owner);
     digitalWrite(RELAY_PIN, HIGH); // Turn on the relay
-    delay(5000); // Keep the relay on for 5 seconds
+    delay(1000); // Keep the relay on for 5 seconds
     digitalWrite(RELAY_PIN, LOW); // Turn off the relay
   } else {
     webSocket.broadcastTXT("UNKNOWN:" + content);
-    Serial.print("UID tag (in red): ");
-    Serial.println(content);
+    Serial.println("UID not found: " + content);
   }
 }
-
-/*void handleRoot() {
-  //File file = SPIFFS.open("/login.html", "r");
-  File file = SPIFFS.open("/index.html", "r");
-  if (!file) {
-    server.send(404, "text/plain", "File not found");
-    return;
-  }
-  server.streamFile(file, "text/html");
-  file.close();
-}*/
 
 void handleIndex() {
   File file = SPIFFS.open("/index.html", "r");
@@ -135,11 +127,31 @@ void handleIndex() {
   file.close();
 }
 
+void handleMember() {
+  File file = SPIFFS.open("/member.html", "r");
+  if (!file) {
+    server.send(404, "text/plain", "File not found");
+    return;
+  }
+  server.streamFile(file, "text/html");
+  file.close();
+}
+
+void handleUIDs() {
+  File file = SPIFFS.open("/UIDs.csv", "r");
+  if (!file) {
+    server.send(404, "text/plain", "File not found");
+    return;
+  }
+  server.streamFile(file, "text/csv");
+  file.close();
+}
+
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
   if (type == WStype_TEXT) {
     String message = String((char *)payload);
     int colonIndex1 = message.indexOf(':');
-    int colonIndex2 = message.indexOf(':', colonIndex1 + 1);
+    int colonIndex2 = message.indexOf(':', colonIndex1 + 1); // Add this line
     String action = message.substring(0, colonIndex1);
     String uid = message.substring(colonIndex1 + 1, colonIndex2);
     String owner = message.substring(colonIndex2 + 1);
@@ -208,7 +220,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       }
     } else if (action == "OPEN") {
       digitalWrite(RELAY_PIN, HIGH); // Turn on the relay
-      delay(5000); // Keep the relay on for 5 seconds
+      delay(1000); // Keep the relay on for 5 seconds
       digitalWrite(RELAY_PIN, LOW); // Turn off the relay
       webSocket.sendTXT(num, "OPEN");
       Serial.println("Open successfully");

@@ -4,6 +4,7 @@
 #include <SPIFFS.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <ESPAsyncWebServer.h>
 
 #define SS_PIN  5 //SDA
 #define RST_PIN 4 //RST
@@ -13,6 +14,9 @@ MFRC522 mfrc522(SS_PIN, RST_PIN);  // Create MFRC522 instance
 
 const char* ssid = "iPhone";
 const char* password = "0951388070z";
+const char* hostname = "ESP32-EN4411";  // Set your desired hostname
+
+AsyncWebServer server(80);
 
 void sendMacAddressAndUIDToAPI(const String& macAddress, const String& uid, bool uidFound);
 void openDoor();
@@ -64,7 +68,6 @@ void sendMacAddressAndUIDToAPI(const String& macAddress, const String& uid, bool
   http.end();
 }
 
-
 void openDoor() {
   digitalWrite(RELAY_PIN, HIGH); // Turn on the relay
   delay(1000); // Keep the relay on for 1 second
@@ -94,6 +97,7 @@ void setup() {
   Serial.begin(115200);  // Initialize serial communications
   // Connect to WiFi
   WiFi.begin(ssid, password);
+  WiFi.setHostname(hostname);  // Set the hostname
   int retryCount = 0;
   while (WiFi.status() != WL_CONNECTED && retryCount < 10) {
     delay(1000);
@@ -102,6 +106,10 @@ void setup() {
   }
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("Connected to WiFi");
+    Serial.print("ESP32 IP Address: ");
+    Serial.println(WiFi.localIP());  // Print the IP address
+    Serial.print("ESP32 Hostname: ");
+    Serial.println(WiFi.getHostname());  // Print the hostname
   } else {
     Serial.println("Failed to connect to WiFi");
   }
@@ -115,6 +123,89 @@ void setup() {
   }
   Serial.println("SPIFFS initialized.");
   pinMode(RELAY_PIN, OUTPUT); // Initialize the relay pin as an output
+
+  // Add UID (ADD)
+  server.on("/api/add", HTTP_POST, [](AsyncWebServerRequest *request) {
+    if (!request->hasParam("uid", true) || !request->hasParam("owner", true)) {
+      request->send(400, "application/json", "{\"error\": \"Missing UID or Owner\"}");
+      return;
+    }
+    String uid = request->getParam("uid", true)->value();
+    String owner = request->getParam("owner", true)->value();
+
+    File file = SPIFFS.open("/UIDs.csv", FILE_APPEND);
+    if (file) {
+      file.println(uid + "," + owner);
+      file.close();
+      request->send(200, "application/json", "{\"message\": \"UID added\"}");
+    } else {
+      request->send(500, "application/json", "{\"error\": \"Failed to open file\"}");
+    }
+  });
+
+  // Delete UID (DELETE)
+  server.on("/api/delete", HTTP_POST, [](AsyncWebServerRequest *request) {
+    if (!request->hasParam("uid", true)) {
+      request->send(400, "application/json", "{\"error\": \"Missing UID\"}");
+      return;
+    }
+    String uidToDelete = request->getParam("uid", true)->value();
+    File file = SPIFFS.open("/UIDs.csv", FILE_READ);
+    if (!file) {
+      request->send(500, "application/json", "{\"error\": \"Failed to open file\"}");
+      return;
+    }
+
+    String newContent = "";
+    while (file.available()) {
+      String line = file.readStringUntil('\n');
+      if (!line.startsWith(uidToDelete + ",")) {
+        newContent += line + "\n";
+      }
+    }
+    file.close();
+
+    File outFile = SPIFFS.open("/UIDs.csv", FILE_WRITE);
+    if (outFile) {
+      outFile.print(newContent);
+      outFile.close();
+      request->send(200, "application/json", "{\"message\": \"UID deleted\"}");
+    } else {
+      request->send(500, "application/json", "{\"error\": \"Failed to update file\"}");
+    }
+  });
+
+  // Request UID list (REQUEST)
+  server.on("/api/request", HTTP_GET, [](AsyncWebServerRequest *request) {
+    File file = SPIFFS.open("/UIDs.csv", FILE_READ);
+    if (!file) {
+      request->send(500, "application/json", "{\"error\": \"Failed to open file\"}");
+      return;
+    }
+
+    String json = "[";
+    bool first = true;
+    while (file.available()) {
+      String line = file.readStringUntil('\n');
+      if (!first) json += ",";
+      json += "{\"uid\":\"" + line.substring(0, line.indexOf(',')) + "\",\"owner\":\"" + line.substring(line.indexOf(',') + 1) + "\"}";
+      first = false;
+    }
+    file.close();
+    json += "]";
+
+    request->send(200, "application/json", json);
+  });
+
+  // Open door (OPEN)
+  server.on("/api/open", HTTP_POST, [](AsyncWebServerRequest *request) {
+    digitalWrite(RELAY_PIN, HIGH);
+    delay(1000);
+    digitalWrite(RELAY_PIN, LOW);
+    request->send(200, "application/json", "{\"message\": \"Door opened\"}");
+  });
+
+  server.begin();
 }
 
 void loop() {
@@ -172,6 +263,3 @@ void loop() {
     sendMacAddressAndUIDToAPI(macAddress, content, false);
   }
 }
-
-
-

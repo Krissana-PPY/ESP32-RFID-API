@@ -1,5 +1,8 @@
 from flask import Flask, request, jsonify
 import mysql.connector
+import requests
+
+ESP32_IP = "http://172.20.10.2:80"  # Update with the correct IP of the ESP32
 
 app = Flask(__name__)
 
@@ -67,6 +70,45 @@ def receive_mac_address():
     else:
         return jsonify({"error": "MAC Address or UID not provided"}), 400
 
+@app.route('/api/add', methods=['POST'])
+def add_uid():
+    data = request.get_json()
+    if not data or 'uid' not in data or 'owner' not in data:
+        return jsonify({"error": "Missing UID or owner"}), 400
+
+    try:
+        response = requests.post(f"{ESP32_IP}/api/add", data={"uid": data['uid'], "owner": data['owner']})
+        return response.json(), response.status_code
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/delete', methods=['POST'])
+def delete_uid():
+    data = request.get_json()
+    if not data or 'uid' not in data:
+        return jsonify({"error": "Missing UID"}), 400
+
+    try:
+        response = requests.post(f"{ESP32_IP}/api/delete", data={"uid": data['uid']})
+        return response.json(), response.status_code
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/request', methods=['GET'])
+def request_uids():
+    try:
+        response = requests.get(f"{ESP32_IP}/api/request")
+        return response.json(), response.status_code
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/open', methods=['POST'])
+def open_door():
+    try:
+        response = requests.post(f"{ESP32_IP}/api/open")
+        return response.json(), response.status_code
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)

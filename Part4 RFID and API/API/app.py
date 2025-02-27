@@ -55,7 +55,7 @@ def receive_mac_address():
                     conn.commit()
                     cursor.close()
                     conn.close()
-                    return jsonify({"uid": uid, "owner": user['owner_uid']}), 200
+                    return jsonify({"owner_uid": user['owner_uid']}), 200
                 else:
                     cursor.close()
                     conn.close()
@@ -63,7 +63,7 @@ def receive_mac_address():
             else:
                 cursor.close()
                 conn.close()
-                return jsonify({"message": "No such UID found."}), 404  # แก้ข้อความให้ชัดเจนขึ้น
+                return jsonify({"message": "No such UID found."}), 404
     else:
         return jsonify({"error": "MAC Address or UID not provided"}), 400
 

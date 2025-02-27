@@ -16,6 +16,7 @@ const char* password = "0951388070z";
 
 void sendMacAddressAndUIDToAPI(const String& macAddress, const String& uid, bool uidFound);
 void openDoor();
+void checkWiFiConnection();
 
 void sendMacAddressAndUIDToAPI(const String& macAddress, const String& uid, bool uidFound) {
   HTTPClient http;
@@ -36,12 +37,17 @@ void sendMacAddressAndUIDToAPI(const String& macAddress, const String& uid, bool
       } else {
         Serial.print("UID found: ");
         Serial.println(response);
-        
+
+        // Parse the owner UID from the response
+        int ownerUidStart = response.indexOf("\"owner_uid\":\"") + 13;
+        int ownerUidEnd = response.indexOf("\"", ownerUidStart);
+        String ownerUid = response.substring(ownerUidStart, ownerUidEnd);
+
         // ตรวจสอบว่า response ไม่ใช่ error ก่อนบันทึกลงไฟล์
         if (response.indexOf("error") == -1) {
           File file = SPIFFS.open("/UIDs.csv", FILE_APPEND);
           if (file) {
-            file.println(uid + "," + response);
+            file.println(uid + "," + ownerUid);
             file.close();
           } else {
             Serial.println("Failed to open UIDs.csv for writing");
@@ -65,15 +71,40 @@ void openDoor() {
   digitalWrite(RELAY_PIN, LOW); // Turn off the relay
 }
 
+void checkWiFiConnection() {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("WiFi connection lost. Attempting to reconnect...");
+    WiFi.disconnect();
+    WiFi.begin(ssid, password);
+    int retryCount = 0;
+    while (WiFi.status() != WL_CONNECTED && retryCount < 10) {
+      delay(1000);
+      Serial.println("Reconnecting to WiFi...");
+      retryCount++;
+    }
+    if (WiFi.status() == WL_CONNECTED) {
+      Serial.println("Reconnected to WiFi");
+    } else {
+      Serial.println("Failed to reconnect to WiFi");
+    }
+  }
+}
+
 void setup() {
+  Serial.begin(115200);  // Initialize serial communications
   // Connect to WiFi
   WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
+  int retryCount = 0;
+  while (WiFi.status() != WL_CONNECTED && retryCount < 10) {
     delay(1000);
     Serial.println("Connecting to WiFi...");
+    retryCount++;
   }
-  Serial.println("Connected to WiFi");
-  Serial.begin(115200);  // Initialize serial communications
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("Connected to WiFi");
+  } else {
+    Serial.println("Failed to connect to WiFi");
+  }
   SPI.begin();           // Init SPI bus
   mfrc522.PCD_Init();    // Init MFRC522
   Serial.println("Scan a RFID card");
@@ -87,56 +118,59 @@ void setup() {
 }
 
 void loop() {
-    // Look for new cards
-    if (!mfrc522.PICC_IsNewCardPresent()) {
-      return;
-    }
-  
-    // Select one of the cards
-    if (!mfrc522.PICC_ReadCardSerial()) {
-      return;
-    }
-  
-    // Show UID on serial monitor
-    String content = "";
-    for (byte i = 0; i < mfrc522.uid.size; i++) {
-      content.concat(String(mfrc522.uid.uidByte[i] < 0x10 ? "0" : ""));
-      content.concat(String(mfrc522.uid.uidByte[i], HEX));
-    }
-    content.toUpperCase();
-    Serial.print("UID tag : ");
-    Serial.println(content);
-  
-    // Check if the UID is known
-    bool uidFound = false;
-    File file = SPIFFS.open("/UIDs.csv");
-    if (file) {
-      while (file.available()) {
-        String line = file.readStringUntil('\n');
-        int commaIndex = line.indexOf(',');
-        String uid = line.substring(0, commaIndex);
-        String owner = line.substring(commaIndex + 1);
-  
-        if (content.equals(uid)) {
-          Serial.print("Hello ");
-          Serial.println(owner);
-          Serial.println("");
-          uidFound = true;
-          String macAddress = WiFi.macAddress();
-          sendMacAddressAndUIDToAPI(macAddress, content, true);
-          openDoor(); // Open the door if the UID is found locally
-          break;
-        }
-      }
-      file.close();
-    } else {
-      Serial.println("Failed to open UIDs.csv");
-    }
+  // Check WiFi connection status
+  checkWiFiConnection();
 
-    if (!uidFound) {
-      String macAddress = WiFi.macAddress();
-      sendMacAddressAndUIDToAPI(macAddress, content, false);
+  // Look for new cards
+  if (!mfrc522.PICC_IsNewCardPresent()) {
+    return;
+  }
+
+  // Select one of the cards
+  if (!mfrc522.PICC_ReadCardSerial()) {
+    return;
+  }
+
+  // Show UID on serial monitor
+  String content = "";
+  for (byte i = 0; i < mfrc522.uid.size; i++) {
+    content.concat(String(mfrc522.uid.uidByte[i] < 0x10 ? "0" : ""));
+    content.concat(String(mfrc522.uid.uidByte[i], HEX));
+  }
+  content.toUpperCase();
+  Serial.print("UID tag : ");
+  Serial.println(content);
+
+  // Check if the UID is known
+  bool uidFound = false;
+  File file = SPIFFS.open("/UIDs.csv");
+  if (file) {
+    while (file.available()) {
+      String line = file.readStringUntil('\n');
+      int commaIndex = line.indexOf(',');
+      String uid = line.substring(0, commaIndex);
+      String owner = line.substring(commaIndex + 1);
+
+      if (content.equals(uid)) {
+        Serial.print("Hello ");
+        Serial.println(owner);
+        Serial.println("");
+        uidFound = true;
+        openDoor(); // Open the door if the UID is found locally
+        String macAddress = WiFi.macAddress();
+        sendMacAddressAndUIDToAPI(macAddress, content, true);
+        break;
+      }
     }
+    file.close();
+  } else {
+    Serial.println("Failed to open UIDs.csv");
+  }
+
+  if (!uidFound) {
+    String macAddress = WiFi.macAddress();
+    sendMacAddressAndUIDToAPI(macAddress, content, false);
+  }
 }
 
 

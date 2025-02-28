@@ -19,7 +19,6 @@ CREATE TABLE users (
 CREATE TABLE attendance_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     uid VARCHAR(20) NOT NULL,
-    owner_uid VARCHAR(50) NOT NULL,
     room_name VARCHAR(10) NOT NULL,
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (uid) REFERENCES users(uid)

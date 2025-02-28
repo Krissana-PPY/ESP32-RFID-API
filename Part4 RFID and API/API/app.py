@@ -32,8 +32,8 @@ def receive_mac_address():
                 cursor.execute("SELECT owner_uid FROM users WHERE uid = %s", (uid,))
                 user = cursor.fetchone()
                 if user:
-                    cursor.execute("INSERT INTO attendance_logs (uid, owner_uid, room_name) VALUES (%s, %s, %s)",
-                                   (uid, user['owner_uid'], room['room_name']))
+                    cursor.execute("INSERT INTO attendance_logs (uid, room_name) VALUES (%s, %s)",
+                                   (uid, room['room_name']))
                     conn.commit()
                     cursor.close()
                     conn.close()
@@ -53,8 +53,8 @@ def receive_mac_address():
                 cursor.execute("SELECT room_name FROM classrooms WHERE mac_address = %s", (mac_address,))
                 room = cursor.fetchone()
                 if room:
-                    cursor.execute("INSERT INTO attendance_logs (uid, owner_uid, room_name) VALUES (%s, %s, %s)",
-                                   (uid, user['owner_uid'], room['room_name']))
+                    cursor.execute("INSERT INTO attendance_logs (uid, room_name) VALUES (%s, %s)",
+                                   (uid, room['room_name']))
                     conn.commit()
                     cursor.close()
                     conn.close()

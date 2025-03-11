@@ -13,10 +13,10 @@
 MFRC522 mfrc522(SS_PIN, RST_PIN);  // Create MFRC522 instance
 WebSocketsClient webSocket;
 
-const char* ssid = "iPhone";
-const char* password = "0951388070z";
+const char* ssid = "iPhone"; // Set your desired SSID
+const char* password = "0951388070z"; //  Set your desired password
 const char* hostname = "ESP32-EN-Test";  // Set your desired hostname
-const char* webSocketServerIP = "172.20.10.3";  // Define the WebSocket server IP address
+const char* webSocketServerIP = "172.20.10.3";  // Set the IP address of the WebSocket server
 
 void openDoor();
 void checkWiFiConnection();

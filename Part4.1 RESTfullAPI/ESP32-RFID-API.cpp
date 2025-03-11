@@ -12,10 +12,10 @@
 
 MFRC522 mfrc522(SS_PIN, RST_PIN);  // Create MFRC522 instance
 
-const char* ssid = "iPhone"; // Set your desired SSID
-const char* password = "0951388070z"; // Set your desired password
+const char* ssid = "WIFI"; // Set your desired SSID
+const char* password = "password"; // Set your desired password
 const char* hostname = "ESP32-EN4111";  // Set your desired hostname
-const char* apiIPAddress = "http://172.20.10.3:5000"; // Set the IP address of the API server
+const char* apiIPAddress = "http://ip address:5000"; // Set the IP address of the API server
 
 AsyncWebServer server(80);
 
@@ -144,11 +144,6 @@ void setup() {
     Serial.println(WiFi.localIP());  // Print the IP address
     Serial.print("ESP32 Hostname: ");
     Serial.println(WiFi.getHostname());  // Print the hostname
-
-    // Send MAC Address and IP Address to API
-    String macAddress = WiFi.macAddress();
-    String ipAddress = WiFi.localIP().toString();
-    updateIPAddress(macAddress, ipAddress);
   } else {
     Serial.println("Failed to connect to WiFi");
   }
@@ -164,6 +159,7 @@ void setup() {
   pinMode(RELAY_PIN, OUTPUT); // Initialize the relay pin as an output
 
   // Add UID (ADD)
+  // curl -X POST http://172.20.10.2:80/api/add --data-urlencode "uid=73A0301D" --data-urlencode "owner=NAME"
   server.on("/api/add", HTTP_POST, [](AsyncWebServerRequest *request) {
     if (!request->hasParam("uid", true) || !request->hasParam("owner", true)) {
       request->send(400, "application/json", "{\"error\": \"Missing UID or Owner\"}");
@@ -184,6 +180,7 @@ void setup() {
   });
 
   // Delete UID (DELETE)
+  // curl -X POST http://ip_address_ESP32:80/api/delete --data-urlencode "uid=73A0301D"
   server.on("/api/delete", HTTP_POST, [](AsyncWebServerRequest *request) {
     if (!request->hasParam("uid", true)) {
       request->send(400, "application/json", "{\"error\": \"Missing UID\"}");
@@ -217,6 +214,7 @@ void setup() {
   });
 
   // Request UID list (REQUEST)
+  // curl -X GET http://ip_address_ESP32:80/api/request
   server.on("/api/request", HTTP_GET, [](AsyncWebServerRequest *request) {
     File file = SPIFFS.open("/UIDs.csv", FILE_READ);
     if (!file) {
@@ -240,6 +238,7 @@ void setup() {
   });
 
   // Open door (OPEN)
+  // curl -X POST http://ip_address_ESP32:80/api/open
   server.on("/api/open", HTTP_POST, [](AsyncWebServerRequest *request) {
     openDoor();
     request->send(200, "application/json", "{\"message\": \"Door opened\"}");

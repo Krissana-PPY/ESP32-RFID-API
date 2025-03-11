@@ -226,6 +226,7 @@ void setup() {
     bool first = true;
     while (file.available()) {
       String line = file.readStringUntil('\n');
+      line.trim();
       if (!first) json += ",";
       json += "{\"uid\":\"" + line.substring(0, line.indexOf(',')) + "\",\"owner\":\"" + line.substring(line.indexOf(',') + 1) + "\"}";
       first = false;

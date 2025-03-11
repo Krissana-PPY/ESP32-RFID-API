@@ -163,7 +163,7 @@ void setup() {
   Serial.println("SPIFFS initialized.");
   pinMode(RELAY_PIN, OUTPUT); // Initialize the relay pin as an output
 
-  // Add UID (ADD)
+  // curl -X POST http://ip_address_ESP32:80/api/add --data-urlencode "uid=73A0301D" --data-urlencode "owner=NAME"
   server.on("/api/add", HTTP_POST, [](AsyncWebServerRequest *request) {
     if (!request->hasParam("uid", true) || !request->hasParam("owner", true)) {
       request->send(400, "application/json", "{\"error\": \"Missing UID or Owner\"}");
@@ -183,7 +183,7 @@ void setup() {
     }
   });
 
-  // Delete UID (DELETE)
+  // curl -X POST http://ip_address_ESP32:80/api/delete --data-urlencode "uid=73A0301D"
   server.on("/api/delete", HTTP_POST, [](AsyncWebServerRequest *request) {
     if (!request->hasParam("uid", true)) {
       request->send(400, "application/json", "{\"error\": \"Missing UID\"}");
@@ -216,7 +216,7 @@ void setup() {
     }
   });
 
-  // Request UID list (REQUEST)
+  // curl -X GET http://ip_address_ESP32:80/api/request
   server.on("/api/request", HTTP_GET, [](AsyncWebServerRequest *request) {
     File file = SPIFFS.open("/UIDs.csv", FILE_READ);
     if (!file) {
@@ -228,6 +228,7 @@ void setup() {
     bool first = true;
     while (file.available()) {
       String line = file.readStringUntil('\n');
+      line.trim();
       if (!first) json += ",";
       json += "{\"uid\":\"" + line.substring(0, line.indexOf(',')) + "\",\"owner\":\"" + line.substring(line.indexOf(',') + 1) + "\"}";
       first = false;
@@ -239,7 +240,7 @@ void setup() {
     Serial.println("UID list sent");
   });
 
-  // Open door (OPEN)
+  // curl -X POST http://ip_address_ESP32:80/api/open
   server.on("/api/open", HTTP_POST, [](AsyncWebServerRequest *request) {
     openDoor();
     request->send(200, "application/json", "{\"message\": \"Door opened\"}");

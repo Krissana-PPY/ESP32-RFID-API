@@ -159,7 +159,7 @@ void setup() {
   pinMode(RELAY_PIN, OUTPUT); // Initialize the relay pin as an output
 
   // Add UID (ADD)
-  // curl -X POST http://172.20.10.2:80/api/add --data-urlencode "uid=73A0301D" --data-urlencode "owner=NAME"
+  // curl -X POST http://ip_address_ESP32:80/api/add --data-urlencode "uid=73A0301D" --data-urlencode "owner=NAME"
   server.on("/api/add", HTTP_POST, [](AsyncWebServerRequest *request) {
     if (!request->hasParam("uid", true) || !request->hasParam("owner", true)) {
       request->send(400, "application/json", "{\"error\": \"Missing UID or Owner\"}");

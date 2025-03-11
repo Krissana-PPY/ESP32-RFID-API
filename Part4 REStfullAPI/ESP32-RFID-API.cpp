@@ -12,60 +12,68 @@
 
 MFRC522 mfrc522(SS_PIN, RST_PIN);  // Create MFRC522 instance
 
-const char* ssid = "iPhone";
-const char* password = "0951388070z";
-const char* hostname = "ESP32-EN4411";  // Set your desired hostname
+const char* ssid = "wifi"; // Set your desired SSID
+const char* password = "password"; // Set your desired password
+const char* hostname = "ESP32-EN4111";  // Set your desired hostname
+const char* apiIPAddress = "http://ip address:5000"; // Set the IP address of the API server
 
 AsyncWebServer server(80);
 
-void sendMacAddressAndUIDToAPI(const String& macAddress, const String& uid, bool uidFound);
-void openDoor();
 void checkWiFiConnection();
+void updateIPAddress(const String& macAddress, const String& ipAddress);
+void sendDATA(const String& macAddress, const String& uid, bool uidFound);
+void openDoor();
 
-void sendMacAddressAndUIDToAPI(const String& macAddress, const String& uid, bool uidFound) {
+void sendDATA(const String& macAddress, const String& uid, bool uidFound) {
   HTTPClient http;
-  http.begin("http://172.20.10.3:5000/api/mac");
-  http.addHeader("Content-Type", "application/json");
+  int httpResponseCode = -1;
+  int retryCount = 0;
+  while (httpResponseCode <= 0 && retryCount < 5) { // Retry up to 5 times
+    http.begin(String(apiIPAddress) + "/api/send_uid"); // Use the apiIPAddress variable
+    http.addHeader("Content-Type", "application/json");
 
-  String payload = "{\"mac_address\": \"" + macAddress + "\", \"uid\": \"" + uid + "\", \"uid_found\": " + (uidFound ? "true" : "false") + "}";
-  int httpResponseCode = http.POST(payload);
+    String payload = "{\"mac_address\": \"" + macAddress + "\", \"uid\": \"" + uid + "\", \"uid_found\": " + (uidFound ? "true" : "false") + "}";
+    httpResponseCode = http.POST(payload);
 
-  if (httpResponseCode > 0) {
-    String response = http.getString();
-    Serial.print("Server response: ");
-    Serial.println(response);
+    if (httpResponseCode > 0) {
+      String response = http.getString();
+      Serial.print("Server response: ");
+      Serial.println(response);
 
-    if (!uidFound) {
-      if (response.indexOf("No such UID found") != -1) {
-        Serial.println("UID not found in database.");
-      } else {
-        Serial.print("UID found: ");
-        Serial.println(response);
+      if (!uidFound) {
+        if (response.indexOf("No such UID found") != -1) {
+          Serial.println("UID not found in database.");
+        } else {
+          Serial.print("UID found: ");
+          Serial.println(response);
 
-        // Parse the owner UID from the response
-        int ownerUidStart = response.indexOf("\"owner_uid\":\"") + 13;
-        int ownerUidEnd = response.indexOf("\"", ownerUidStart);
-        String ownerUid = response.substring(ownerUidStart, ownerUidEnd);
+          // Parse the owner UID from the response
+          int ownerUidStart = response.indexOf("\"owner_uid\":\"") + 13;
+          int ownerUidEnd = response.indexOf("\"", ownerUidStart);
+          String ownerUid = response.substring(ownerUidStart, ownerUidEnd);
 
-        // ตรวจสอบว่า response ไม่ใช่ error ก่อนบันทึกลงไฟล์
-        if (response.indexOf("error") == -1) {
-          File file = SPIFFS.open("/UIDs.csv", FILE_APPEND);
-          if (file) {
-            file.println(uid + "," + ownerUid);
-            file.close();
-          } else {
-            Serial.println("Failed to open UIDs.csv for writing");
+          // ตรวจสอบว่า response ไม่ใช่ error ก่อนบันทึกลงไฟล์
+          if (response.indexOf("error") == -1) {
+            File file = SPIFFS.open("/UIDs.csv", FILE_APPEND);
+            if (file) {
+              file.println(uid + "," + ownerUid);
+              file.close();
+            } else {
+              Serial.println("Failed to open UIDs.csv for writing");
+            }
+            openDoor(); // เปิดประตูถ้า UID ได้รับการยืนยันจาก API
           }
-          openDoor(); // เปิดประตูถ้า UID ได้รับการยืนยันจาก API
         }
       }
+    } else {
+      Serial.print("Error on sending POST: ");
+      Serial.println(httpResponseCode);
+      delay(1000); // Wait for 1 second before retrying
+      retryCount++;
     }
-  } else {
-    Serial.print("Error on sending POST: ");
-    Serial.println(httpResponseCode);
-  }
 
-  http.end();
+    http.end();
+  }
 }
 
 void openDoor() {
@@ -93,6 +101,32 @@ void checkWiFiConnection() {
   }
 }
 
+void updateIPAddress(const String& macAddress, const String& ipAddress) {
+  HTTPClient http;
+  int httpResponseCode = -1;
+  int retryCount = 0;
+  while (httpResponseCode <= 0 && retryCount < 5) { // Retry up to 5 times
+    http.begin(String(apiIPAddress) + "/api/update_ip"); // Use the apiIPAddress variable
+    http.addHeader("Content-Type", "application/json");
+
+    String payload = "{\"mac_address\": \"" + macAddress + "\", \"ip_address\": \"" + ipAddress + "\"}";
+    httpResponseCode = http.POST(payload);
+
+    if (httpResponseCode > 0) {
+      String response = http.getString();
+      Serial.print("Server response: ");
+      Serial.println(response);
+    } else {
+      Serial.print("Error on sending POST: ");
+      Serial.println(httpResponseCode);
+      delay(1000); // Wait for 1 second before retrying
+      retryCount++;
+    }
+
+    http.end();
+  }
+}
+
 void setup() {
   Serial.begin(115200);  // Initialize serial communications
   // Connect to WiFi
@@ -110,6 +144,11 @@ void setup() {
     Serial.println(WiFi.localIP());  // Print the IP address
     Serial.print("ESP32 Hostname: ");
     Serial.println(WiFi.getHostname());  // Print the hostname
+
+    // Send MAC Address and IP Address to API
+    String macAddress = WiFi.macAddress();
+    String ipAddress = WiFi.localIP().toString();
+    updateIPAddress(macAddress, ipAddress);
   } else {
     Serial.println("Failed to connect to WiFi");
   }
@@ -138,6 +177,7 @@ void setup() {
       file.println(uid + "," + owner);
       file.close();
       request->send(200, "application/json", "{\"message\": \"UID added\"}");
+      Serial.println(uid + " and " + owner + " added to UIDs.csv");
     } else {
       request->send(500, "application/json", "{\"error\": \"Failed to open file\"}");
     }
@@ -170,6 +210,7 @@ void setup() {
       outFile.print(newContent);
       outFile.close();
       request->send(200, "application/json", "{\"message\": \"UID deleted\"}");
+      Serial.println(uid + " deleted from UIDs.csv");
     } else {
       request->send(500, "application/json", "{\"error\": \"Failed to update file\"}");
     }
@@ -195,14 +236,14 @@ void setup() {
     json += "]";
 
     request->send(200, "application/json", json);
+    Serial.println("UID list sent");
   });
 
   // Open door (OPEN)
   server.on("/api/open", HTTP_POST, [](AsyncWebServerRequest *request) {
-    digitalWrite(RELAY_PIN, HIGH);
-    delay(1000);
-    digitalWrite(RELAY_PIN, LOW);
+    openDoor();
     request->send(200, "application/json", "{\"message\": \"Door opened\"}");
+    Serial.println("Door opened");
   });
 
   server.begin();
@@ -249,7 +290,7 @@ void loop() {
         uidFound = true;
         openDoor(); // Open the door if the UID is found locally
         String macAddress = WiFi.macAddress();
-        sendMacAddressAndUIDToAPI(macAddress, content, true);
+        sendDATA(macAddress, content, true);
         break;
       }
     }
@@ -260,6 +301,6 @@ void loop() {
 
   if (!uidFound) {
     String macAddress = WiFi.macAddress();
-    sendMacAddressAndUIDToAPI(macAddress, content, false);
+    sendDATA(macAddress, content, false);
   }
 }

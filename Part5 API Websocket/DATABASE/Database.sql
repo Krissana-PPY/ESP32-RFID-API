@@ -5,7 +5,8 @@ USE esp32_access_db;
 CREATE TABLE classrooms (
     id INT AUTO_INCREMENT PRIMARY KEY,
     mac_address VARCHAR(17) UNIQUE NOT NULL,
-    room_name VARCHAR(10) NOT NULL
+    room_name VARCHAR(10) NOT NULL,
+    ss_id VARCHAR(50) NULL
 );
 
 -- ตารางเก็บข้อมูลผู้ใช้ (UID และชื่อ)

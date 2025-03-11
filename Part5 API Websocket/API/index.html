@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>UID Check</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { 
+            background-color: lightblue; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+            font-family: Arial, sans-serif;
+            padding: 10px; /* Add padding for better mobile view */
+        }
+        .container { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 10px; 
+            text-align: center; 
+            width: 100%; /* Change to 100% for mobile responsiveness */
+            max-width: 500px; 
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        button { 
+            background: lightblue; 
+            border: none; 
+            padding: 15px 30px; 
+            border-radius: 5px; 
+            margin: 10px 0; /* Adjust margin for better spacing on mobile */
+            width: 100%; 
+            font-size: 16px; 
+            cursor: pointer;
+        }
+        .green-button { 
+            background: green; 
+            color: white; 
+            border-radius: 5px; 
+            width: 100px; /* Set width to 100px for square shape */
+            height: 100px; /* Set height to 100px for square shape */
+            padding: 0; 
+            font-size: 20px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            margin: 20px auto; /* Center the button */
+            flex: 1;
+        }
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="button-container">
+            <button class="green-button" onclick="sendRoomName('EN4411')">EN4411</button>
+            <button class="green-button" onclick="sendRoomName('EN4111')">EN4111</button>
+        </div>
+    </div>
+    <script>
+        const webSocket = new WebSocket('ws://localhost:5000/ws');
+
+        webSocket.onopen = function(event) {
+            console.log('WebSocket is connected.');
+        };
+
+        webSocket.onmessage = function(event) {
+            console.log('WebSocket message received:', event.data);
+        };
+
+        function sendRoomName(roomName) {
+            const message = JSON.stringify({ command: 'open_room', room_name: roomName });
+            webSocket.send(message);
+        }
+    </script>
+</body>
+</html>

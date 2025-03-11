@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 import mysql.connector
 import requests
 
-ESP32_IP = "http://172.20.10.2:80"  # Update with the correct IP of the ESP32
+ESP32_IP = "http://ip_address_ESP32:80"  # Replace with the IP address of your ESP32
 
 app = Flask(__name__)
 
@@ -14,7 +14,24 @@ def get_db_connection():
         database="esp32_access_db"
     )
 
-@app.route('/api/mac', methods=['POST'])
+@app.route('/api/update_ip', methods=['POST'])
+def update_ip_address():
+    data = request.get_json()
+    mac_address = data.get('mac_address')
+    ip_address = data.get('ip_address')
+
+    if mac_address and ip_address:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("UPDATE classrooms SET ip_address = %s WHERE mac_address = %s", (ip_address, mac_address))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({"message": "IP Address updated"}), 200
+    else:
+        return jsonify({"error": "MAC Address or IP Address not provided"}), 400
+
+@app.route('/api/send_uid', methods=['POST'])
 def receive_mac_address():
     data = request.get_json()
     mac_address = data.get('mac_address')
@@ -70,6 +87,7 @@ def receive_mac_address():
     else:
         return jsonify({"error": "MAC Address or UID not provided"}), 400
 
+# curl -X POST http://172.20.10.2:80/api/add --data-urlencode "uid=73A0301D" --data-urlencode "owner=NAME"
 @app.route('/api/add', methods=['POST'])
 def add_uid():
     data = request.get_json()
@@ -82,6 +100,7 @@ def add_uid():
     except requests.exceptions.RequestException as e:
         return jsonify({"error": str(e)}), 500
 
+# curl -X POST http://ip_address_ESP32:80/api/delete --data-urlencode "uid=73A0301D"
 @app.route('/api/delete', methods=['POST'])
 def delete_uid():
     data = request.get_json()
@@ -94,6 +113,7 @@ def delete_uid():
     except requests.exceptions.RequestException as e:
         return jsonify({"error": str(e)}), 500
 
+# curl -X GET http://ip_address_ESP32:80/api/request
 @app.route('/api/request', methods=['GET'])
 def request_uids():
     try:
@@ -102,6 +122,7 @@ def request_uids():
     except requests.exceptions.RequestException as e:
         return jsonify({"error": str(e)}), 500
 
+# curl -X POST http://ip_address_ESP32:80/api/open
 @app.route('/api/open', methods=['POST'])
 def open_door():
     try:

@@ -12,10 +12,10 @@
 
 MFRC522 mfrc522(SS_PIN, RST_PIN);  // Create MFRC522 instance
 
-const char* ssid = "WIFI"; // Set your desired SSID
+const char* ssid = "ssid"; // Set your desired SSID
 const char* password = "password"; // Set your desired password
 const char* hostname = "ESP32-EN4111";  // Set your desired hostname
-const char* apiIPAddress = "http://ip address:5000"; // Set the IP address of the API server
+const char* apiIPAddress = "http://"; // Set the IP address of the API server
 
 AsyncWebServer server(80);
 

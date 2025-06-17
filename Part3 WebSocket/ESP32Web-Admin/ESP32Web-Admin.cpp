@@ -54,7 +54,7 @@ void setup() {
   webSocket.onEvent(webSocketEvent);
 
   pinMode(RELAY_PIN, OUTPUT); // Initialize the relay pin as an output
-  digitalWrite(RELAY_PIN, LOW); // Ensure the relay is off initially
+  digitalWrite(RELAY_PIN, HIGH); // Ensure the relay is off initially
 }
 
 void loop() {
@@ -108,9 +108,9 @@ void loop() {
   // Send UID and owner information to the website
   if (uidFound) {
     webSocket.broadcastTXT("KNOWN:" + content + ":" + owner);
-    digitalWrite(RELAY_PIN, HIGH); // Turn on the relay
-    delay(1000); // Keep the relay on for 5 seconds
-    digitalWrite(RELAY_PIN, LOW); // Turn off the relay
+    digitalWrite(RELAY_PIN, LOW); // Turn on the relay
+    delay(3000); // Keep the relay on for 5 seconds
+    digitalWrite(RELAY_PIN, HIGH); // Turn off the relay
   } else {
     webSocket.broadcastTXT("UNKNOWN:" + content);
     Serial.println("UID not found: " + content);
@@ -219,9 +219,9 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
         Serial.println("Failed to open UIDs.csv");
       }
     } else if (action == "OPEN") {
-      digitalWrite(RELAY_PIN, HIGH); // Turn on the relay
-      delay(1000); // Keep the relay on for 5 seconds
-      digitalWrite(RELAY_PIN, LOW); // Turn off the relay
+      digitalWrite(RELAY_PIN, LOW); // Turn on the relay
+      delay(3000); // Keep the relay on for 3 seconds
+      digitalWrite(RELAY_PIN, HIGH); // Turn off the relay
       webSocket.sendTXT(num, "OPEN");
       Serial.println("Open successfully");
     }

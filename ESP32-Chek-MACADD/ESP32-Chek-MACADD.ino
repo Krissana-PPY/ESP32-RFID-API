@@ -19,28 +19,11 @@ void readMacAddress(){
   }
 }
 
-void connectToWiFi() {
-  const char* ssid = "kku-wifi_iot";
-  const char* password = "KKUiot@1q2w3e4r!";
-
-  Serial.print("Connecting to WiFi...");
-  WiFi.begin(ssid, password);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-
-  Serial.println("\nWiFi connected.");
-  Serial.print("IP Address: ");
-  Serial.println(WiFi.localIP());
-}
-
 void setup(){
   Serial.begin(115200);
 
   WiFi.mode(WIFI_STA);
-  connectToWiFi();
+  WiFi.STA.begin();
 
   Serial.print("[DEFAULT] ESP32 Board MAC Address: ");
   readMacAddress();

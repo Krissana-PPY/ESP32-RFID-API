@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>UID Check</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { 
+            background-color: lightblue; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+            font-family: Arial, sans-serif;
+            padding: 10px; /* Add padding for better mobile view */
+        }
+        .container { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 10px; 
+            text-align: center; 
+            width: 100%; /* Change to 100% for mobile responsiveness */
+            max-width: 500px; 
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        button { 
+            background: lightblue; 
+            border: none; 
+            padding: 15px 30px; 
+            border-radius: 5px; 
+            margin: 10px 0; /* Adjust margin for better spacing on mobile */
+            width: 100%; 
+            font-size: 16px; 
+            cursor: pointer;
+        }
+        input { 
+            padding: 15px; 
+            border-radius: 5px; 
+            border: 1px solid lightblue; 
+            margin: 10px 0; 
+            width: calc(100% - 32px); 
+            font-size: 16px; 
+            text-align: center; 
+        }
+        #uid { 
+            color: black; 
+        }
+        #message {
+            margin-top: 10px;
+        }
+        .green-button { 
+            background: green; 
+            color: white; 
+            border-radius: 5px; 
+            width: 100px; /* Set width to 100px for square shape */
+            height: 100px; /* Set height to 100px for square shape */
+            padding: 0; 
+            font-size: 20px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            margin: 20px auto; /* Center the button */
+        }
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+        }
+        .green-button {
+            flex: 1;
+            margin: 10px; /* Add margin for spacing between buttons */
+        }
+        .lightblue-button {
+            background: lightblue; /* Change color to lightblue */
+            color: white;
+            border-radius: 5px;
+            width: 100%; /* Set width to 100px for square shape */
+            height: 50px; /* Set height to 100px for square shape */
+            padding: 0;
+            font-size: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px auto; /* Center the button */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>UID</h2>
+        <input type="text" id="uid" readonly>
+        <input type="text" id="status" placeholder="">
+        <div id="message"></div>
+        <div>
+            <button class="lightblue-button" onclick="sendWebSocketMessage('ADD')">Registration</button>
+            <button class="lightblue-button" onclick="sendWebSocketMessage('DELETE')">Delete</button>
+        </div>
+        <div class="button-container">
+            <button class="green-button" onclick="sendWebSocketMessage('OPEN')">OPEN</button>
+            <button class="green-button" onclick="window.location.href='member.html'">MEMBER</button>
+        </div>
+        
+    </div>
+    <script>
+        var webSocket = new WebSocket('ws://' + window.location.hostname + ':81/');
+        webSocket.onmessage = function(event) {
+            var message = event.data.split(':');
+            var status = message[0];
+            var uid = message[1];
+            var owner = message[2] || '';
+            var uidInput = document.getElementById('uid');
+            var statusInput = document.getElementById('status');
+            var messageDiv = document.getElementById('message');
+            if (status === 'KNOWN') {
+                uidInput.value = uid;
+                uidInput.style.color = 'green';
+                statusInput.placeholder = 'Hello ' + owner;
+                statusInput.style.color = 'green';
+                messageDiv.innerText = '';
+            } else if (status === 'UNKNOWN') {
+                uidInput.value = uid;
+                uidInput.style.color = 'red';
+                statusInput.placeholder = '';
+                messageDiv.innerText = 'Enter owner\'s name for registration';
+                messageDiv.style.color = 'red';
+            } else if (status === 'Successfully registered') {
+                messageDiv.innerText = status;
+                messageDiv.style.color = 'green';
+                statusInput.value = '';
+            } else if (status === 'User successfully deleted') {
+                messageDiv.innerText = status;
+                messageDiv.style.color = 'green';
+            } else if (status === 'UID already exists') {
+                messageDiv.innerText = status;
+                messageDiv.style.color = 'red';
+            } else if (status === 'OPEN') {
+                messageDiv.innerText = 'Open successfully';
+                messageDiv.style.color = 'green';
+            } else {
+                messageDiv.innerText = status;
+                messageDiv.style.color = 'red';
+            }
+        };
+        function sendWebSocketMessage(action) {
+            var uid = document.getElementById('uid').value;
+            var status = document.getElementById('status').value;
+            if (action === 'OPEN') {
+                webSocket.send(action);
+            } else if (uid) {
+                if (action === 'ADD' && status) {
+                    webSocket.send(action + ':' + uid + ':' + status);
+                } else if (action === 'DELETE') {
+                    webSocket.send(action + ':' + uid);
+                } else {
+                    document.getElementById('message').innerText = 'Please enter the owner\'s name for registration';
+                    document.getElementById('message').style.color = 'red';
+                }
+            } else {
+                document.getElementById('message').innerText = 'Please scan a UID first';
+                document.getElementById('message').style.color = 'red';
+            }
+        }
+    </script>
+</body>
+</html>
